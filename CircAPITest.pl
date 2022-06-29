@@ -36,16 +36,21 @@ use MIME::Base64 'encode_base64';
 
 use constant API_CHUNK_SIZE => 16;
 use constant CARLX_ID_WB0=> 'wb0';
-use constant USER_AUTH => 'frederick';
-use constant PASS_AUTH => 'SwV3QEtjMwSs7fuL';
+
 use constant INSTITUTE_CODE => 1770;
 use constant FCPL_BRANCH=>'CBA';
-use constant ITEM_RETURN_DATE => '2022-06-15';
+use constant ITEM_RETURN_DATE => '2022-06-30';
 use constant WSDL_FILE => 'CirculationAPI.wsdl';
 
 #Command line input variable handling
-our ($opt_g,$opt_x,$opt_q);
-getopts('gx:q');
+our ($opt_g,$opt_x,$opt_q,$opt_u,$opt_p,$opt_y,$opt_d);
+getopts('gx:qu:p:y::d:');
+
+my $user_auth = $opt_u;
+my $pass_auth = $opt_p;
+my $carlxid = $opt_y;
+my $checkin_date = $opt_d;
+
 
 #use if defined($opt_g), "Log::Report", mode=>'DEBUG';
 #BEGIN { require Data::Dumper if defined($opt_g) }
@@ -53,9 +58,15 @@ getopts('gx:q');
  my $local_filename=$0;
  $local_filename =~ s/.+\\([A-z]+.pl)/$1/;
  
+unless ( defined($opt_u) && defined($opt_p) && defined($opt_y) && defined($opt_d) )
+
+{ die "[$local_filename" . ":" . __LINE__ . "]Usage: perl CircAPITest.pl -u user -p password -y CarlX Id -d date" ;
+}
+
 if ( defined($opt_g) ) {
      say "[$local_filename" . ":" . __LINE__ . "]Debug Mode $opt_g." ;
 }
+
 
 my $quiet_mode = 0;
 
@@ -74,7 +85,7 @@ my $ua = LWP::UserAgent->new(show_progress=> 1, timeout => 10);
 sub basic_auth($$)
 {   my ($request, $trace) = @_;
     
-    $request->authorization_basic(USER_AUTH, PASS_AUTH);
+    $request->authorization_basic($user_auth, $pass_auth);
     $ua->request($request);     # returns $response
 }
 
@@ -84,10 +95,11 @@ sub basic_auth($$)
 my %CheckinItemRequest = (
  ItemID => '',
  Alias=>CARLX_ID_WB0,
- ReturnDate=>ITEM_RETURN_DATE,
+ ReturnDate=>$checkin_date,
      Modifiers=> {
         InstitutionCode=>INSTITUTE_CODE,
-        StaffID=>CARLX_ID_WB0,
+ #       StaffID=>CARLX_ID_WB0,
+        StaffID=>$carlxid,
         EnvBranch=>FCPL_BRANCH,
         DebugMode=>1,
         ReportMode=>0,
